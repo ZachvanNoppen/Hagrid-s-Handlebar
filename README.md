@@ -1,6 +1,6 @@
 # Hagrid's Handlebar
 
-There's three branches so upload your work to each one. The code I've got on the master branch is just the bare minimum to get sensor response from the arduino.
+There's three branches so upload your work to each one. The code there/in 'master' is just the bare minimum to get sensor response from the arduino. 
 
 I've included the sketch that gets the sensors working in arduino IDE in src/sensorFunctionalityTest.ino.
 
