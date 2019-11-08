@@ -2,6 +2,14 @@
 
 There's three branches so upload your work to each one. The code I've got on the master branch is just the bare minimum to get sensor response from the arduino.
 
+I've included the sketch that gets the sensors working in arduino IDE in src/sensorFunctionalityTest.ino.
+
+## TODO
+- Get sensor input working in Visual Studio with OF
+- Figure if i2C will work with OF/find work around
+- Build 3D world
+- Incorporate some type of game functionality
+
 ## Setup Instructions
 
 - Set up the your arduino based on the schematic included
