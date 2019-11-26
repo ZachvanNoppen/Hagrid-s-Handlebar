@@ -93,7 +93,7 @@ void ofApp::updateArduino() {
 	// update the arduino, get any data or messages.
 	// the call to m_arduino.update() is required
 	m_arduino.update();
-
+	readString();
 
 }
 
@@ -129,16 +129,19 @@ float ofApp::getIRDistance(int & val)
 
 void ofApp::readString() {
 	str = m_arduino.getString();
-	//We recieve data in a packet of numbers seperated by spaces, so we extract the information like
-	//'1.022 2.452 2.543 '
-	/*float x = str[0:4];
-	float x = str[6:10];
-	float x = str[11:15];*/
-	//m_orientation[0] = ;
-	cout << str << endl;
-	
+	std::string::size_type sz;
+
+	std::string numX = str.substr(0, 4);
+	std::string numY = str.substr(str.length()-6, str.length()-1);
+
+	float x = std::stof(numX, &sz);
+	float y = std::stof(numY, &sz);
+
+
+	cout << "X: " << x << endl;
+	cout << "Y: " << y << endl;
 }
 
 void ofApp::mousePressed(int x, int y, int button) {
-	readString();
+	
 }

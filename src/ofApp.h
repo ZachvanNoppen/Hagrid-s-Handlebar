@@ -16,7 +16,7 @@
 #include <string>
 
 namespace config {
-	static const std::string ARDUINO_DEVICE_NAME = "COM4";		//WIN
+	static const std::string ARDUINO_DEVICE_NAME = "COM3";		//WIN
 	//static const std::string ARDUINO_DEVICE_NAME = "/dev/cu.usbmodem144101";	//MAC
 };
 
