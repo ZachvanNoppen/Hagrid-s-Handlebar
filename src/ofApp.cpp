@@ -3,13 +3,9 @@
 //--------------------------------------------------------------
 void ofApp::setup()
 {
-	keyboard_toggle = false;
-    m_font.load( "DIN.otf", 16 );
 
+    m_font.load( "DIN.otf", 16 );
 	//setup Arduino
-	// replace the string below with the serial port for your Arduino board
-	// you can get this from the Arduino application (Tools Menu -> Port) 
-	//m_arduino.connect("COM4", 57600);
     m_arduino.connect(config::ARDUINO_DEVICE_NAME, 57600);
 
 	m_brake_val	= 0.0f;
@@ -17,64 +13,49 @@ void ofApp::setup()
 
 	// Listen for EInitialized notification. this indicates that
 	// the arduino is ready to receive commands and it is safe to
-	// call setupArduino()
 	ofAddListener(m_arduino.EInitialized, this, &ofApp::setupArduino);
-	//setupArduino();
 	m_bSetup = false;
 
 	ofBackground(255, 255, 255);
-
 	ofSetVerticalSync(true);
-
-	// load the first model
-	//model.loadModel("penguin.dae", 20);
-	// model info
-	//curFileInfo = ".dae";
-
-
-	// this loads in the model directly into a mesh
-	// ofMesh can only read in .plys that are in the ascii and not in the binary format.
-	//bUsingMesh = false;
-	//mesh.load("penguin.ply");
-	//meshNode.setOrientation(glm::angleAxis(ofDegToRad(-90.f), glm::vec3{1.f, 0.f, 0.f}));
-
-	// you can create as many rotations as you want
-	// choose which axis you want it to effect
-	// you can update these rotations later on
-	// these rotation set the model so it is oriented correctly
 
 	bUsingMesh = false;
 
+    //Set up the bike and camera so it is facing the right direction
 	bikeControls.setOrientation(ofVec3f(0, 180, 0));
 	bikeControls.setPosition(ofVec3f(0, 100, 0));
 	cam.setPosition(ofVec3f(0, 30, 50));
 	cam.setPosition(ofVec3f(0, 30, 50));
 
+    //Loading in the bike model and setting up the orientation
 	bike.loadModel("bike.3DS");
 	bike.setRotation(0, 180, 1, 0, 0);
 	bike.setScale(0.1, 0.1, 0.1);
 	bike.setPosition(bikeControls.getGlobalPosition().x, bikeControls.getGlobalPosition().y, bikeControls.getGlobalPosition().z);
 	curFileInfo = ".3ds";
 
+    //Setting up the virtual world
 	model.loadModel("gmae.3ds");
 	model.setRotation(0, 180, 1, 0, 0);
 	model.setScale(10.0, 10.0, 10.0);
 	curFileInfo = ".3ds";
 
+    //Setting up lighting
 	light.setPosition(500, 0, 1500);
 
-	//cameraOrbit = 0;
-	//cam.setDistance(500);
+    //Initializing the location of the bike.
+    //Note that the bikeControls variable inherits the attributes of the camera, and is then used to position the bike model
 	bikeControls.setGlobalPosition(bikeControls.getGlobalPosition().x, bikeControls.getGlobalPosition().y - 120, bikeControls.getGlobalPosition().z - 20);
 	bikeControls.setParent(cam);
 	//set help text to display by default
 	bHelpText = true;
 
+    //Initializing orientation variables
 	tilt = cam.getOrientationEulerDeg().x;
 	pan = cam.getOrientationEulerDeg().y;
-
+    m_panRead = 0;
+    m_tiltRead = -40.0f;
 	m_acceleration = 1.0f;
-
 
 }
 
@@ -83,88 +64,112 @@ void ofApp::update()
 {
     updateArduino();
 
+    
 	if (m_bSetup) {
 		m_controllerRot = readString();
 		//map from 0 to 20 to 0 to 90
-		tilt = ofMap(m_controllerRot.y,0.0f,20.0f,-180.0f,180.0f);
-		pan = ofMap(m_controllerRot.x, 0.0f, 20.0f, -180.0f, 180.0f);
-        //tilt = ofMap(m_controllerRot.y, 0.0f, 20.0f, -1.0f, 1.0f);
-        //pan = ofMap(m_controllerRot.x, 0.0f, 20.0f, -1.0f, 1.0f);
-		ofVec3f orient(-pan, tilt+TILT_CORRECTION, 0.0f);
-        //ofQuaternion orient(pan, tilt, 0.0f, 0.0f);
-		cam.setOrientation(orient);
-        //bikeControls.setOrientation(orient);
+		m_tiltRead = ofMap(m_controllerRot.x,0.0f,20.0f,-180.0f,180.0f);
+        m_panRead = ofMap(m_controllerRot.y, 0.0f, 20.0f, -180.0f, 180.0f);
 	}
 	//Added
 	bike.setPosition(bikeControls.getGlobalPosition().x, bikeControls.getGlobalPosition().y, bikeControls.getGlobalPosition().z);
 
-	//tilt = cam.getOrientationEulerDeg().x;
-	//float rot = cam.getOrientationEulerDeg().z;
-    ofVec3f bikeOrient = cam.getOrientationEulerDeg();
-	bike.setRotation(1, bikeOrient.y, 0, 1, 0);
-	bike.setRotation(1, bikeOrient.x, 1, 0, 0);
-	//bike.setRotation(1, rot, 0, 0, 1);
+    //Only allow turning if NOT tilted up or down. 
+    //This keep the camera positioned properly
+    if (tilt == 0) {
+        //Only panning if the controller is moved a certain amount
+        //The hard coded values here are specific to the controller setup used
+        if (m_panRead > 40.0) {
+            //Pan the camera and pan the bike over the same amount to keep it in the center of the screen
+            cam.panDeg(2);
+            //Since the pan variable is seperate from the camera (only keeping track alongside camera rotation) it has to change if it gets too big/small
+            if (pan >= 180) {
+                pan = -180;
+            }
+            else {
+                pan += 2;
+            }
+            bike.setRotation(1, pan, 0, 1, 0);
+        }
+        else if (m_panRead < -20.0) {
+            cam.panDeg(-2);
+            if (pan <= -180) {
+                pan = 180;
+            }
+            else {
+                pan -= 2;
+            }
+            bike.setRotation(1, pan, 0, 1, 0);
+        }
+            
+    }
+        //Tilting up and down
+        //The hard coded values here are specific to the controller setup used
+        if (m_tiltRead < -95.0) {
+            //Limitting the amount the bike can tilt
+            if (tilt < 30.0f) {
+                tilt += 2;
+                cam.tiltDeg(2);
+            }
+            bike.setRotation(1, -tilt, 1, 0, 0);
+            bike.setRotation(1, pan, 0, 1, 0);
 
+        }
+        else if (m_tiltRead > -35.0) {
+            //Limitting the amount the bike can tilt
+            if (tilt > -30.0f) {
+                cam.tiltDeg(-2);
+                tilt -= 2;
+            }
+            bike.setRotation(1, -tilt, 1, 0, 0);
+            bike.setRotation(1, pan, 0, 1, 0);
+        }
+        else {
+            //If the bike is at rest, tilt back to the default position
+            cam.tiltDeg(0 - tilt);
+            tilt = 0;
+        }
+    
+    //Getting the normalized vector that the bike will move along
+    //Allows us to move in the direction the bike is facing
 	ofVec3f dir;
 	dir = cam.getLookAtDir();
-	//when using the keyboard controlls
-	if (keyboard_toggle) {
-		//m_acceleration = 1.0;
-	}
-	else {
-		m_acceleration = m_gas_val / 10.0f;
-	}
+
+	//Setting the accelleration
+    m_acceleration += m_gas_val / 50.0f;
+    if (m_acceleration < 1.0f) {
+        m_acceleration = 1.0f;
+    }
+    //Moving the camera, which in turn moves the bike
 	cam.move(dir.x * m_acceleration, dir.y, dir.z * m_acceleration);
-    m_acceleration /= 1.01f;// *(m_brake_val / 20.0f);
+    //Making the bike always move slightly forward, at idle
+    if (m_brake_val < 1.0f) {
+        m_brake_val = 1.0f;
+    }
+    //Slowing the bike down
+    m_acceleration /= 1.01f * (m_brake_val);
 }
 //--------------------------------------------------------------
 void ofApp::draw()
 {
+    //Setting up the environment and lighting
 	ofEnableDepthTest();
-
 	light.enable();
 
 	cam.begin();
 	ofColor(255, 255);
-	if (bUsingMesh) {
-		// draws the ply file loaded into the mesh is you pressed 6
-		meshNode.transformGL();
-		mesh.draw();
-		meshNode.restoreTransformGL();
-	}
-	else {
-		// draws all the other file types which are loaded into model.
-		model.drawFaces();
-		//bike.setPosition(bikeControls.getGlobalPosition().x, bikeControls.getGlobalPosition().y, bikeControls.getGlobalPosition().z);
-		bike.drawFaces();
-	}
+	//Drawing the model and world
+    model.drawFaces();
+    bike.drawFaces();
 
-	//bikeControls.setGlobalPosition(bikeControls.getGlobalPosition().x, bikeControls.getGlobalPosition().y, bikeControls.getGlobalPosition().z - 90);
-	ofSetColor(0, 0, 255);
-	ofBoxPrimitive tempBike(10, 10, 10);
-	tempBike.setPosition(bikeControls.getGlobalPosition());
-	tempBike.setGlobalOrientation(bikeControls.getGlobalOrientation());
-	tempBike.draw();
-
-	//ofDrawBox(bikeControls.getGlobalPosition(), 20);
 	cam.end();
-
 	light.disable();
-
 	ofDisableDepthTest();
 
 	// display help text if it is enable
 	if (bHelpText) {
 		stringstream ss;
-		ss << bikeControls.getOrientationEulerDeg().x << endl;
-		ss << bike.getRotationAngle(0) << endl;
 		ss << "FPS: " << ofToString(ofGetFrameRate(), 0) << endl << endl;
-		ss << "(1/2/3/4/5/6): load different file types" << endl;
-		ss << "Current file info: " + curFileInfo << endl;
-		if (bUsingMesh) {
-			ss << "Use ofEasyCam mouse and key controls to navigate." << endl << endl;
-		}
-		ss << "(h): Toggle help." << endl;
 		ofDrawBitmapString(ss.str().c_str(), 20, 20);
 	}
     
@@ -174,20 +179,14 @@ void ofApp::draw()
 
     // remap our flex values (can check on arduino sketch as values will always vary between sensors)
     float radius = ofMap( m_brake_val, 0, 255, 20, 150 );
-
 	float stretch_radius = ofMap(m_gas_val, 0, 255, 20, 150);
-	
 	
 }
 
 //--------------------------------------------------------------
 void ofApp::setupArduino(const int & _version)
 {
-	cout << "Setup" << endl;
-    /**
-     Look under examples/communication/firmata for more examples ..
-     **/
-    
+    //Lets the program know the arduino is connected
     m_bSetup = true;
     
 	// remove listener because we don't need it anymore
@@ -206,6 +205,7 @@ void ofApp::setupArduino(const int & _version)
     ofAddListener(m_arduino.EDigitalPinChanged, this, &ofApp::digitalPinChanged);
     ofAddListener(m_arduino.EAnalogPinChanged, this, &ofApp::analogPinChanged);
 
+    //Wait until this is displayed in the console to start moving the controller
 	cout << "Setup Complete" << endl;
 	
 }
@@ -216,25 +216,22 @@ void ofApp::updateArduino() {
 	// update the arduino, get any data or messages.
 	// the call to m_arduino.update() is required
 	m_arduino.update();
-	
-	
-
 }
 
 void ofApp::digitalPinChanged(const int & pinNum) {
-    //std::cout  << "digital pin: " + ofToString(pinNum) + " : " + ofToString(m_arduino.getDigital(pinNum)) << std::endl;
+    //No digital pins are used
 }
 
 void ofApp::analogPinChanged(const int & pinNum) {
-    //std::cout  << "analog pin: " + ofToString(pinNum) + " : " + ofToString(m_arduino.getAnalog(pinNum)) << std::endl;
+    //Getting data from the arduino
     if ( pinNum == PIN_BRAKE_INPUT) {
-        
-        //get analog value
+        //Mapping the analog signal to usable data
         m_brake_val = m_arduino.getAnalog(pinNum);
         m_brake_val = (int)ofMap( m_brake_val, 0, 1024, 0, 255 );
         
     }
 	if (pinNum == PIN_GAS_INPUT) {
+        //Mapping the analog signal to usable  data
 		m_gas_val = m_arduino.getAnalog(pinNum);
 		m_gas_val = (int)ofMap(m_gas_val, 0, 1024, 0, 255);
 	}
@@ -243,67 +240,56 @@ void ofApp::analogPinChanged(const int & pinNum) {
 
 ofVec2f ofApp::readString() {
 	ofVec2f orientation;
+    //Reading the string value in the buffer sent from the arduino
 	str = m_arduino.getString();
 	std::string::size_type sz;
-
+    //Grabbing the first number, and last number since their length will change
 	std::string numX = str.substr(0, 4);
 	std::string numY = str.substr(str.length()-6, str.length()-1);
-
-
+    //Parsing each number to a float and returning the vector
 	orientation.x = std::stof(numX, &sz);
 	orientation.y = std::stof(numY, &sz);
-
 
 	return orientation;
 }
 
-void ofApp::mousePressed(int x, int y, int button) {
-	
-}
-
 void ofApp::keyPressed(int key) {
 
-	//Toggle the keyboard controlls
-	if (key == 'k') {
-		keyboard_toggle = true;
-	}
-	//COMMENT OUT JUST FOR DEBUG
-	//keyboard_toggle = true;
+	//Some keyboard controls for debugging
 
-        if (key == OF_KEY_UP) {
-            m_acceleration += 5.0f;
-            cout << m_acceleration << endl;
+    if (key == OF_KEY_UP) {
+        m_acceleration += 5.0f;
+        cout << m_acceleration << endl;
 
-        }
-        else if (key == OF_KEY_DOWN) {
+    }
+    else if (key == OF_KEY_DOWN) {
 
-            m_acceleration -= 10.0f;
+        m_acceleration -= 10.0f;
+    }
+    if (key == OF_KEY_RIGHT) {
+        cam.panDeg(-2);
+        if (pan <= -180) {
+            pan = 180;
         }
-
-        if (key == OF_KEY_RIGHT) {
-            cam.panDeg(-2);
-            if (pan <= -180) {
-                pan = 180;
-            }
-            else {
-                pan -= 2;
-            }
+        else {
+            pan -= 2;
         }
-        else if (key == OF_KEY_LEFT) {
-            cam.panDeg(2);
-            if (pan >= 180) {
-                pan = -180;
-            }
-            else {
-                pan += 2;
-            }
+    }
+    else if (key == OF_KEY_LEFT) {
+        cam.panDeg(2);
+        if (pan >= 180) {
+            pan = -180;
         }
-        if (key == 'w') {
-            cam.tiltDeg(2);
+        else {
+            pan += 2;
         }
-        if (key == 's') {
-            cam.tiltDeg(-2);
-        }
+    }
+    if (key == 'w') {
+        cam.tiltDeg(2);
+    }
+    if (key == 's') {
+        cam.tiltDeg(-2);
+    }
 	
 	
 }
