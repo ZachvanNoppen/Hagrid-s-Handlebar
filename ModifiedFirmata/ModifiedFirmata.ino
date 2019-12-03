@@ -778,19 +778,18 @@ void setup()
   // Serial1.begin(57600);
   // Firmata.begin(Serial1);
   // However do not do this if you are using SERIAL_MESSAGE
-
   Firmata.begin(57600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
   }
+  //Serial.print("TEst3");
   //Wait for accel to connect
-  if(!accel.begin())
+  while(!accel.begin())
    {
-    
-      Serial.println("No ADXL345 sensor detected.");
-      while(1);
+    //if NO ADXL
+      Serial.print("int");
    }
-
+  //Serial.print("TEst4");
   systemResetCallback();  // reset to default config
 }
 
@@ -882,6 +881,7 @@ void loop()
   strcat(tx, ty);
   //Serial.print("Cat");Serial.println(tx);
   Firmata.sendString(tx);
+  //Serial.println("okay");
   delay(500);
   
   byte pin, analogPin;

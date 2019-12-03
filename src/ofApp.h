@@ -24,8 +24,8 @@ class ofApp : public ofBaseApp
 {
 public:
 	string str;
-    static const int PIN_PRESSURE_INPUT   = 5;
-	static const int PIN_STRETCH_INPUT = 1;
+    static const int PIN_BRAKE_INPUT = 3;
+	static const int PIN_GAS_INPUT	 = 0;
 
     void setup();
     void update();
@@ -34,8 +34,8 @@ public:
 	//Arduino stuff
 	ofArduino				m_arduino;
     ofTrueTypeFont          m_font;
-	int					    m_pressure_val;	//sensor value
-	int					    m_stretch_val;	//sensor value
+	int					    m_brake_val;	//sensor value
+	int					    m_gas_val;		//sensor value
 	bool					m_bSetup;       //is Arduinio initialized yet
 
 	//Accelerometer data
@@ -48,8 +48,40 @@ public:
 	//void setupArduino();
     void digitalPinChanged(const int & pinNum);
     void analogPinChanged(const int & pinNum);
-	float getIRDistance(int & val);
-	void readString();
+	ofVec2f readString();
 	void mousePressed(int x, int y, int button);
+
+	void keyPressed(int key);
+
+	ofVec2f m_controllerRot;
+	ofNode bikeControls;
+
+	ofxAssimpModelLoader model;
+	ofxAssimpModelLoader bike;
+
+	ofVec3f bikeRotation;
+
+	ofLight	light;
+
+	// stores the info on the current file.
+	string curFileInfo;
+
+	//boolean to toggle help text
+	bool bHelpText;
+
+	// for demonstrating loading in models directly into a mesh without using ofxAssimpModelLoader
+	ofVboMesh mesh;
+	bool bUsingMesh;
+	bool keyboard_toggle;
+	ofNode meshNode;
+
+	ofCamera cam;
+	float cameraOrbit;
+
+	float m_acceleration;
+	float pan;
+	float tilt;
+
+
 };
 
