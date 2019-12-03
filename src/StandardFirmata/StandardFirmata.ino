@@ -1,4 +1,3 @@
-
 /*
   Firmata is a generic protocol for communicating with microcontrollers
   from software on a host computer. It is intended to work with
@@ -23,14 +22,11 @@
 
   Last updated August 17th, 2017
 */
-
 #include <Adafruit_Sensor.h> 
 #include <Adafruit_ADXL345_U.h>
 #include <Servo.h>
 #include <Wire.h>
 #include <Firmata.h>
-#include <stdio.h>
-#include <math.h>
 
 #define I2C_WRITE                   B00000000
 #define I2C_READ                    B00001000
@@ -757,8 +753,17 @@ void systemResetCallback()
   isResetting = false;
 }
 
-//ADXL Var
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified();
+
+void getADXL345(){
+   sensors_event_t event; 
+   accel.getEvent(&event);
+
+   int x = event.acceleration.x;
+   int y = event.acceleration.y;
+   int z = event.acceleration.z;
+   delay(500); 
+}
 
 void setup()
 {
@@ -772,118 +777,37 @@ void setup()
   Firmata.attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
   Firmata.attach(START_SYSEX, sysexCallback);
   Firmata.attach(SYSTEM_RESET, systemResetCallback);
-
+  //if(!accel.begin())
+   //{
+    
+      //Serial.println("No ADXL345 sensor detected.");
+    //  while(1);
+   //}
+  
   // to use a port other than Serial, such as Serial1 on an Arduino Leonardo or Mega,
   // Call begin(baud) on the alternate serial port and pass it to Firmata to begin like this:
   // Serial1.begin(57600);
   // Firmata.begin(Serial1);
   // However do not do this if you are using SERIAL_MESSAGE
+
   Firmata.begin(57600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for ATmega32u4-based boards and Arduino 101
   }
-  //Serial.print("TEst3");
-  //Wait for accel to connect
-  while(!accel.begin())
-   {
-    //if NO ADXL
-      Serial.print("int");
-   }
-  //Serial.print("TEst4");
+  
   systemResetCallback();  // reset to default config
-}
-
-void reverse(char* str, int len) 
-{ 
-    int i = 0, j = len - 1, temp; 
-    while (i < j) { 
-        temp = str[i]; 
-        str[i] = str[j]; 
-        str[j] = temp; 
-        i++; 
-        j--; 
-    } 
-} 
-
-int intToStr(int x, char str[], int d) 
-{ 
-    int i = 0; 
-    while (x) { 
-        str[i++] = (x % 10) + '0'; 
-        x = x / 10; 
-    } 
-  
-    // If number of digits required is more, then 
-    // add 0s at the beginning 
-    while (i < d) 
-        str[i++] = '0'; 
-  
-    reverse(str, i); 
-    str[i] = '\0'; 
-    return i; 
-} 
-// Converts a floating-point/double number to a string. 
-void ftoa(float n, char* res, int afterpoint) 
-{ 
-    // Extract integer part 
-    int ipart = (int)n; 
-  
-    // Extract floating part 
-    float fpart = n - (float)ipart; 
-  
-    // convert integer part to string 
-    int i = intToStr(ipart, res, 0); 
-  
-    // check for display option after point 
-    if (afterpoint != 0) { 
-        res[i] = '.'; // add dot 
-  
-        // Get the value of fraction part upto given no. 
-        // of points after dot. The third parameter  
-        // is needed to handle cases like 233.007 
-        fpart = fpart * pow(10, afterpoint); 
-  
-        intToStr((int)fpart, res + i + 1, afterpoint); 
-    } 
 
 }
 
-char tx[12];
-char ty[6];
-//ADXL INFORMATION
-void getRotations(){
-   sensors_event_t event; 
-   accel.getEvent(&event);
-
-   float x = event.acceleration.x + 10;
-   float y = event.acceleration.y + 10;
-   
-   //Grab X
-   char str_x[6];
-   ftoa(x, str_x, 3);
-   strncpy(tx,str_x,5);
-    
-   //Grab Y
-   char str_y[6];
-   ftoa(y, str_y, 3);
-   strncpy(ty,str_y,5);
-
-}
 /*==============================================================================
  * LOOP()
  *============================================================================*/
 void loop()
 {
-  getRotations();
- // Serial.println(tx);
-  //Serial.println(ty);
-  strcat(tx, " ");
-  strcat(tx, ty);
-  //Serial.print("Cat");Serial.println(tx);
-  Firmata.sendString(tx);
-  //Serial.println("okay");
-  delay(500);
-  
+
+  //getADXL345();
+  Firmata.sendString("This is a cstring");
+  //delay(1000);
   byte pin, analogPin;
 
   /* DIGITALREAD - as fast as possible, check for changes and output them to the
