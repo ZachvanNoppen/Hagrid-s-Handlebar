@@ -861,12 +861,12 @@ void getRotations(){
    float x = event.acceleration.x + 10;
    float y = event.acceleration.y + 10;
    
-   //Grab X
+   //Grab X value and convert it to a string
    char str_x[6];
    ftoa(x, str_x, 3);
    strncpy(tx,str_x,5);
     
-   //Grab Y
+   //Grab Y value and convert it to a string
    char str_y[6];
    ftoa(y, str_y, 3);
    strncpy(ty,str_y,5);
@@ -877,7 +877,7 @@ void getRotations(){
  *============================================================================*/
 void loop()
 {
-   delayStart = millis();
+   //Getting the accelerometer data and sending it to the OpenFrameworks code through Frimata
    getRotations();
    strcat(tx, " ");
    strcat(tx, ty);
